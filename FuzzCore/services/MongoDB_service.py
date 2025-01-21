@@ -10,7 +10,7 @@ load_dotenv()
 
 class MongoDBService:
     def __init__(self):
-        self.mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
+        self.mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/FuzzTheRest')
         self.db_name = os.getenv('MONGO_DB_NAME')
         self.collection_name = os.getenv('MONGO_COLLECTION_NAME', 'metrics')
         self.client = None
@@ -39,7 +39,6 @@ class MongoDBService:
                 file_id = fs.put(compressed_json)
                 self.collection.insert_one({"key": key, "file_id": file_id})
                 return True
-
 
             except PyMongoError as e:
                 print(f"MongoDB error: {e}")

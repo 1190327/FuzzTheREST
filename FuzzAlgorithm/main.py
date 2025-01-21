@@ -1,6 +1,9 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+import sys
+import os
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import numpy as np
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,14 +18,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 load_dotenv()
-
-
 
 app.include_router(fuzzingController.router)
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

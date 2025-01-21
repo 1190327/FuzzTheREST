@@ -19,6 +19,12 @@ public class FtpService {
                 int ftpPort = Integer.parseInt(dotenv.get("FTP_PORT"));
                 String ftpUser = dotenv.get("FTP_USER");
                 String ftpPassword = dotenv.get("FTP_PASSWORD");
+                System.out.println(dotenv);
+                System.out.println(ftpHost);
+                System.out.println(ftpPort);
+                System.out.println(ftpUser);
+                System.out.println(ftpPassword);
+
 
 
                 ftpClient.connect(ftpHost, ftpPort);
@@ -31,6 +37,9 @@ public class FtpService {
 
 
                 boolean success = ftpClient.storeFile(fileName, fileData);
+                System.out.println(success);
+                System.out.println(fileName);
+                System.out.println(fileData);
                 if (success) {
 
                     return ftpClient.printWorkingDirectory() + "/" + fileName;

@@ -1,6 +1,6 @@
-import requests
 import os
-import json
+
+import requests
 from dotenv import load_dotenv
 
 from FuzzCore.services.mapper_service import convert_http_requests, BasePayload
@@ -16,7 +16,6 @@ def initiate_fuzzing(data, base_url, functions_data, ids, scenarios):
     url = f"{env_url}/execution"
     headers = {'Content-Type': 'application/json'}
 
-
     basepayload = {
         "algorithm_type": data.algorithm_type,
         "base_url": base_url,
@@ -30,6 +29,6 @@ def initiate_fuzzing(data, base_url, functions_data, ids, scenarios):
 
     payload = BasePayload(**basepayload)
     payload_json = payload.json()
-    response=requests.post(url, headers=headers, data=payload_json)
+    response = requests.post(url, headers=headers, data=payload_json)
 
     return response.json()
