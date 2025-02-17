@@ -1,7 +1,6 @@
 import pytest
-import requests
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 from FuzzCore.main import app
 
 

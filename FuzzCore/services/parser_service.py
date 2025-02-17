@@ -3,7 +3,6 @@ import ftplib
 import os
 import sys
 from io import BytesIO
-from urllib.parse import urlparse
 
 import yaml
 from dotenv import load_dotenv
@@ -12,11 +11,12 @@ from FuzzCore.Taxonomy import Schema, Object, Attribute, Parameter, RequestBody,
 from utils import fill_values
 
 
-def create_Schema(name, object_data, existing_objects: dict,ids_fields):
+def create_Schema(name, object_data, existing_objects: dict, ids_fields):
     """
     Constructs a Schema instance from given object data.
 
     Args:
+        ids_fields:
         object_data (dict): Raw schema data from OpenAPI specification.
         existing_objects (dict): A dictionary of pre-existing schemas for resolving references.
 
@@ -74,14 +74,14 @@ def create_schemas_and_ids(spec, ids_fields):
     ids = {}
 
     for object_name, object_data in spec['components']['schemas'].items():
-        schema = create_Schema(object_name, object_data, schemas,ids_fields)
+        schema = create_Schema(object_name, object_data, schemas, ids_fields)
         schemas[object_name] = schema
         if object_name in ids_fields:
-            ids[object_name] =[]
+            ids[object_name] = []
 
-    if('requestBodies' in spec['components']):
+    if 'requestBodies' in spec['components']:
         for object_name, object_data in spec['components']['requestBodies'].items():
-            schema = create_Schema(object_name, object_data, schemas,ids_fields)
+            schema = create_Schema(object_name, object_data, schemas, ids_fields)
             schemas[object_name] = schema
             if object_name in ids_fields:
                 ids[object_name] = []
@@ -89,7 +89,7 @@ def create_schemas_and_ids(spec, ids_fields):
     return schemas, ids
 
 
-def parse_OpenApi_file(file_path: str,ids_fields):
+def parse_OpenApi_file(file_path: str, ids_fields):
     spec = load_data_from_path(file_path)
     # Extract the base connection string (servers -> url)
     base_url = spec['servers'][0]['url']
@@ -118,7 +118,7 @@ def parse_OpenApi_file(file_path: str,ids_fields):
             function_parameters: list = []
 
             # Extract parameters
-            if request_parameters != None:
+            if request_parameters is not None:
                 for parameters in request_parameters:
                     if request_parameters != None:
                         parameter_name = parameters['name']
@@ -134,7 +134,7 @@ def parse_OpenApi_file(file_path: str,ids_fields):
             input_applicaton = None
 
             # Extract input schema
-            if (request_body != None and 'content' in request_body):
+            if request_body is not None and 'content' in request_body:
                 input_schema = request_body['content']
                 if 'application/json' in input_schema:
                     input_applicaton = 'application/json'
@@ -163,15 +163,14 @@ def parse_OpenApi_file(file_path: str,ids_fields):
                         obj = Object(attributes=[])
                         attribute = Attribute(type=input_schema['type'], name="attribute")
                         obj.attributes.append(attribute)
-                        schema =Schema(schema_name="schema",objects=[obj])
+                        schema = Schema(schema_name="schema", objects=[obj])
 
                 if '$ref' in input_schema:
                     schema_name = input_schema['$ref'].split('/')[-1]
                     schema = schemas.get(schema_name)
 
                 if 'properties' in input_schema:
-                    schema = create_Schema(request_name, input_schema, schemas,ids_fields)
-
+                    schema = create_Schema(request_name, input_schema, schemas, ids_fields)
 
             if schema is None:
                 input_body = None
@@ -235,6 +234,7 @@ def load_data_from_local(file_path):
     with open(file_path, 'r') as file:
         spec = yaml.safe_load(file)
     return spec
+
 
 def connect_ftp(ftp_host, ftp_port=21):
     ftp = ftplib.FTP()
