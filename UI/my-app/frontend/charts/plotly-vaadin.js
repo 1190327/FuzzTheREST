@@ -113,3 +113,26 @@ window.renderLearningCurveChart = function(containerId, dataJson) {
 
     Plotly.newPlot(containerId, [trace], layout);
 };
+
+window.renderEpisodeDurationsChart = function(containerId, dataJson) {
+    const data = JSON.parse(dataJson);
+    const xValues = Array.from({length: data.episodeDurations.length}, (v, k) => k + 1);
+    const yValues = data.episodeDurations;
+
+    const trace = {
+        x: xValues,
+        y: yValues,
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { color: 'red' },
+        line: { shape: 'spline' }
+    };
+
+    const layout = {
+        title: 'Episode Durations',
+        xaxis: { title: 'Episode' },
+        yaxis: { title: 'Duration (seconds)' }
+    };
+
+    Plotly.newPlot(containerId, [trace], layout);
+};

@@ -1,4 +1,5 @@
 import random
+import time
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -23,6 +24,7 @@ class QLearningAgent:
         self.max_exploration_rate = max_exploration_rate
         self.exploration_decay_rate = exploration_decay_rate
         self.max_steps_per_episode = max_steps_per_episode
+        self.episode_durations = []  # To store the duration of each episode
         self.episode_rewards = []  # To store the rewards obtained in each episode
         self.rewards_all_episodes = []
         self.mutation_methods = mutation_methods
@@ -66,6 +68,7 @@ class QLearningAgent:
             done = False
             state = self.env.reset()
             rewards_current_episode = 0
+            start_time = time.time()
 
             print(episode)
 
@@ -93,6 +96,8 @@ class QLearningAgent:
                 if done is True:
                     break
 
+            end_time = time.time()
+            self.episode_durations.append(end_time - start_time)
             # Exploration rate decay
             self.exploration_rate = self.min_exploration_rate + \
                                     (self.max_exploration_rate - self.min_exploration_rate) * np.exp(
@@ -270,7 +275,8 @@ def write_agent_report(agent, name):
         "state_visits": agent.state_visits.tolist(),
         "mutation_counts": mutation_counts_serializable,
         "mutation_rewards": mutation_rewards_serializable,
-        "q_value_convergence": q_value_convergence_serializable
+        "q_value_convergence": q_value_convergence_serializable,
+        "episode_durations": agent.episode_durations
     }
 
     return report

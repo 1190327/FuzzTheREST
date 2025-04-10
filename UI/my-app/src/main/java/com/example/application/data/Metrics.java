@@ -93,6 +93,7 @@ public class Metrics {
         private Map<String, Map<String, Integer>> mutation_counts;
         private Map<String, Map<String, List<Double>>> mutation_rewards;
         private QValueConvergence q_value_convergence;
+        private List<Double> episode_durations;
 
         // Getters and Setters
         public String getName() {
@@ -149,6 +150,14 @@ public class Metrics {
 
         public void setQ_value_convergence(QValueConvergence q_value_convergence) {
             this.q_value_convergence = q_value_convergence;
+        }
+
+        public List<Double> getEpisode_durations() {
+            return episode_durations;
+        }
+
+        public void setEpisode_durations(List<Double> episode_durations) {
+            this.episode_durations = episode_durations;
         }
 
         public static class QTables {

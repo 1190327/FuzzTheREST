@@ -6,6 +6,7 @@ import com.example.application.views.ViewMetrics.Charts.LearningCurveChartView;
 import com.example.application.views.ViewMetrics.Charts.MutationChartView;
 import com.example.application.views.ViewMetrics.Charts.QValueChartView;
 import com.example.application.views.ViewMetrics.Charts.StateVisitsChartView;
+import com.example.application.views.ViewMetrics.Charts.EpisodeDurationsChartView;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -34,18 +35,22 @@ public class MetricDetailView extends VerticalLayout{
         MutationChartView mutationChartView = new MutationChartView(metric);
         StateVisitsChartView stateVisitsChartView = new StateVisitsChartView(metric.getState_visits());
         LearningCurveChartView learningCurveChartView = new LearningCurveChartView(metric.getEpisode_rewards(), 100);
+        EpisodeDurationsChartView episodeDurationsChartView = new EpisodeDurationsChartView(metric.getEpisode_durations());
+
         HorizontalLayout row1 = new HorizontalLayout(chartView, mutationChartView);
         HorizontalLayout row2 = new HorizontalLayout(stateVisitsChartView,learningCurveChartView);
+        HorizontalLayout row3 = new HorizontalLayout(episodeDurationsChartView, learningCurveChartView);
 
         row1.setWidthFull();
         row2.setWidthFull();
+        row3.setWidthFull();
 
         Button backButton = new Button("Back to Metrics");
         backButton.addClickListener(event -> {
             UI.getCurrent().navigate("display-fuzzing-metrics/" + selectedId);
         });
 
-        add(backButton, row1, row2);
+        add(backButton, row1, row2, row3);
 
         setSizeFull();
     }
