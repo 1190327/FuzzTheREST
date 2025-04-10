@@ -145,6 +145,21 @@ class QLearningAgent:
         plt.title('Learning Curve')
         plt.show()
 
+    def plot_cumulative_rewards(self, base_path):
+        # Plot cumulative rewards for all episodes
+        plt.plot(range(1, len(self.rewards_all_episodes) + 1), self.rewards_all_episodes, label='Cumulative Reward')
+
+        # Calculate and display the average cumulative reward
+        avg_cumulative_reward = np.mean(self.rewards_all_episodes)
+        plt.axhline(y=avg_cumulative_reward, color='r', linestyle='--', label=f'Average Reward: {avg_cumulative_reward:.2f}')
+
+        plt.xlabel('Episodes')
+        plt.ylabel('Cumulative Reward')
+        plt.title('Cumulative Reward per Episode')
+        plt.legend()
+        plt.savefig(base_path + "cumulative_rewards.png")
+        plt.close()
+
     def plot_action_distribution(self, base_path):
         data_types = ['int', 'float', 'bool', 'byte', 'string']
         for i in range(len(self.mutation_counts)):
@@ -300,7 +315,8 @@ def write_agent_report(agent, name):
         "q_value_convergence": q_value_convergence_serializable,
         "episode_durations": agent.episode_durations,
         "exploration_rates": exploration_rates,
-        "exploitation_rates": exploitation_rates
+        "exploitation_rates": exploitation_rates,
+        "rewards_all_episodes": agent.rewards_all_episodes
     }
 
     return report

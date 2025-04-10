@@ -96,6 +96,7 @@ public class Metrics {
         private List<Double> episode_durations;
         private List<Double> exploration_rates;
         private List<Double> exploitation_rates;
+        private List<Double> rewards_all_episodes;
 
         // Getters and Setters
         public String getName() {
@@ -176,6 +177,14 @@ public class Metrics {
 
         public void setExploitation_rates(List<Double> exploitation_rates) {
             this.exploitation_rates = exploitation_rates;
+        }
+
+        public List<Double> getRewards_all_episodes() {
+            return rewards_all_episodes;
+        }
+
+        public void setRewards_all_episodes(List<Double> rewards_all_episodes) {
+            this.rewards_all_episodes = rewards_all_episodes;
         }
 
         public static class QTables {

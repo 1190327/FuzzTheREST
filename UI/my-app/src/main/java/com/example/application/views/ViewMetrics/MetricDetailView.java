@@ -8,6 +8,7 @@ import com.example.application.views.ViewMetrics.Charts.QValueChartView;
 import com.example.application.views.ViewMetrics.Charts.StateVisitsChartView;
 import com.example.application.views.ViewMetrics.Charts.EpisodeDurationsChartView;
 import com.example.application.views.ViewMetrics.Charts.ExplorationExploitationRatioChartView;
+import com.example.application.views.ViewMetrics.Charts.CumulativeRewardChartView;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -39,10 +40,13 @@ public class MetricDetailView extends VerticalLayout{
         EpisodeDurationsChartView episodeDurationsChartView = new EpisodeDurationsChartView(metric.getEpisode_durations());
         ExplorationExploitationRatioChartView explorationExploitationRatioChartView =
                 new ExplorationExploitationRatioChartView(metric.getExploration_rates(), metric.getExploitation_rates());
+        CumulativeRewardChartView cumulativeRewardChartView = new CumulativeRewardChartView(metric.getRewards_all_episodes());
+
 
         HorizontalLayout row1 = new HorizontalLayout(chartView, mutationChartView);
         HorizontalLayout row2 = new HorizontalLayout(stateVisitsChartView,learningCurveChartView);
         HorizontalLayout row3 = new HorizontalLayout(episodeDurationsChartView, explorationExploitationRatioChartView);
+        HorizontalLayout row4 = new HorizontalLayout(cumulativeRewardChartView);
 
         row1.setWidthFull();
         row2.setWidthFull();
@@ -53,7 +57,7 @@ public class MetricDetailView extends VerticalLayout{
             UI.getCurrent().navigate("display-fuzzing-metrics/" + selectedId);
         });
 
-        add(backButton, row1, row2, row3);
+        add(backButton, row1, row2, row3, row4);
 
         setSizeFull();
     }

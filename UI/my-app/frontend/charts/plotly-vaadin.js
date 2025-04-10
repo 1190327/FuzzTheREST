@@ -166,3 +166,25 @@ window.renderExplorationExploitationRatioChart = function(containerId, dataJson)
 
     Plotly.newPlot(containerId, [explorationTrace, exploitationTrace], layout);
 };
+
+window.renderCumulativeRewardChart = function(containerId, dataJson) {
+    const data = JSON.parse(dataJson);
+    const xValues = Array.from({length: data.cumulativeRewards.length}, (v, k) => k + 1);
+
+    const trace = {
+        x: xValues,
+        y: data.cumulativeRewards,
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { color: 'blue' },
+        line: { shape: 'spline' }
+    };
+
+    const layout = {
+        title: 'Cumulative Reward per Episode',
+        xaxis: { title: 'Episode' },
+        yaxis: { title: 'Cumulative Reward' }
+    };
+
+    Plotly.newPlot(containerId, [trace], layout);
+};
