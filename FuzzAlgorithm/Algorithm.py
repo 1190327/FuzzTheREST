@@ -178,6 +178,22 @@ class QLearningAgent:
             plt.savefig(base_path + "q_action_distribution_" + str(i) + ".png", bbox_inches='tight')
             plt.close()
 
+    def plot_exploration_exploitation_ratio(self, base_path):
+        exploration_rates = [self.min_exploration_rate +
+                             (self.max_exploration_rate - self.min_exploration_rate) * np.exp(
+            -self.exploration_decay_rate * episode)
+                             for episode in range(self.num_episodes)]
+        exploitation_rates = [1 - rate for rate in exploration_rates]
+
+        plt.plot(range(self.num_episodes), exploration_rates, label='Exploration Rate')
+        plt.plot(range(self.num_episodes), exploitation_rates, label='Exploitation Rate')
+        plt.xlabel('Episodes')
+        plt.ylabel('Rate')
+        plt.title('Exploration vs. Exploitation Ratio')
+        plt.legend()
+        plt.savefig(base_path + "exploration_exploitation_ratio.png")
+        plt.close()
+
     def plot_state_visits(self, base_path):
         states = list(range(len(self.state_visits)))
         visit_counts = list(self.state_visits)
@@ -268,6 +284,12 @@ def write_agent_report(agent, name):
         "string": [q.tolist() for q in agent.q_value_convergence['string']],
     }
 
+    exploration_rates = [agent.min_exploration_rate +
+                         (agent.max_exploration_rate - agent.min_exploration_rate) * np.exp(
+        -agent.exploration_decay_rate * episode)
+                         for episode in range(agent.num_episodes)]
+    exploitation_rates = [1 - rate for rate in exploration_rates]
+
     report = {
         "name": name,
         "q_tables": q_tables_serializable,
@@ -276,7 +298,9 @@ def write_agent_report(agent, name):
         "mutation_counts": mutation_counts_serializable,
         "mutation_rewards": mutation_rewards_serializable,
         "q_value_convergence": q_value_convergence_serializable,
-        "episode_durations": agent.episode_durations
+        "episode_durations": agent.episode_durations,
+        "exploration_rates": exploration_rates,
+        "exploitation_rates": exploitation_rates
     }
 
     return report

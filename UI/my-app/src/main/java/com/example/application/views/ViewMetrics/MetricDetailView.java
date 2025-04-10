@@ -7,6 +7,7 @@ import com.example.application.views.ViewMetrics.Charts.MutationChartView;
 import com.example.application.views.ViewMetrics.Charts.QValueChartView;
 import com.example.application.views.ViewMetrics.Charts.StateVisitsChartView;
 import com.example.application.views.ViewMetrics.Charts.EpisodeDurationsChartView;
+import com.example.application.views.ViewMetrics.Charts.ExplorationExploitationRatioChartView;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -36,10 +37,12 @@ public class MetricDetailView extends VerticalLayout{
         StateVisitsChartView stateVisitsChartView = new StateVisitsChartView(metric.getState_visits());
         LearningCurveChartView learningCurveChartView = new LearningCurveChartView(metric.getEpisode_rewards(), 100);
         EpisodeDurationsChartView episodeDurationsChartView = new EpisodeDurationsChartView(metric.getEpisode_durations());
+        ExplorationExploitationRatioChartView explorationExploitationRatioChartView =
+                new ExplorationExploitationRatioChartView(metric.getExploration_rates(), metric.getExploitation_rates());
 
         HorizontalLayout row1 = new HorizontalLayout(chartView, mutationChartView);
         HorizontalLayout row2 = new HorizontalLayout(stateVisitsChartView,learningCurveChartView);
-        HorizontalLayout row3 = new HorizontalLayout(episodeDurationsChartView, learningCurveChartView);
+        HorizontalLayout row3 = new HorizontalLayout(episodeDurationsChartView, explorationExploitationRatioChartView);
 
         row1.setWidthFull();
         row2.setWidthFull();

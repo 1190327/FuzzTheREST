@@ -136,3 +136,33 @@ window.renderEpisodeDurationsChart = function(containerId, dataJson) {
 
     Plotly.newPlot(containerId, [trace], layout);
 };
+
+window.renderExplorationExploitationRatioChart = function(containerId, dataJson) {
+    const data = JSON.parse(dataJson);
+    const xValues = Array.from({length: data.explorationRates.length}, (v, k) => k + 1);
+    const explorationTrace = {
+        x: xValues,
+        y: data.explorationRates,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Exploration Rate',
+        marker: { color: 'blue' }
+    };
+
+    const exploitationTrace = {
+        x: xValues,
+        y: data.exploitationRates,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Exploitation Rate',
+        marker: { color: 'red' }
+    };
+
+    const layout = {
+        title: 'Exploration vs. Exploitation Ratio',
+        xaxis: { title: 'Episodes' },
+        yaxis: { title: 'Rate' }
+    };
+
+    Plotly.newPlot(containerId, [explorationTrace, exploitationTrace], layout);
+};
