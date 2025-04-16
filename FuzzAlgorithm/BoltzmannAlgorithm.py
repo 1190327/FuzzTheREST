@@ -1,4 +1,6 @@
 import random
+import time
+
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
@@ -20,6 +22,7 @@ class QLearningAgent:
         self.min_temperature = min_temperature
         self.temperature_decay = temperature_decay
         self.max_steps_per_episode = max_steps_per_episode
+        self.episode_durations = []  # To store the duration of each episode
         self.episode_rewards = []  # To store the rewards obtained in each episode
         self.rewards_all_episodes = []
         self.mutation_methods = mutation_methods
@@ -63,6 +66,7 @@ class QLearningAgent:
             done = False
             state = self.env.reset()
             rewards_current_episode = 0
+            start_time = time.time()
 
             print(episode)
 
@@ -89,6 +93,8 @@ class QLearningAgent:
                 if done is True:
                     break
 
+            end_time = time.time()
+            self.episode_durations.append(end_time - start_time)
             # Temperature decay
             self.temperature = max(self.min_temperature, self.temperature * self.temperature_decay)
 
@@ -134,6 +140,21 @@ class QLearningAgent:
         plt.title('Learning Curve')
         plt.show()
 
+    def plot_cumulative_rewards(self, base_path):
+        # Plot cumulative rewards for all episodes
+        plt.plot(range(1, len(self.rewards_all_episodes) + 1), self.rewards_all_episodes, label='Cumulative Reward')
+
+        # Calculate and display the average cumulative reward
+        avg_cumulative_reward = np.mean(self.rewards_all_episodes)
+        plt.axhline(y=avg_cumulative_reward, color='r', linestyle='--', label=f'Average Reward: {avg_cumulative_reward:.2f}')
+
+        plt.xlabel('Episodes')
+        plt.ylabel('Cumulative Reward')
+        plt.title('Cumulative Reward per Episode')
+        plt.legend()
+        plt.savefig(base_path + "cumulative_rewards.png")
+        plt.close()
+
     def plot_action_distribution(self, base_path):
         data_types = ['int', 'float', 'bool', 'byte', 'string']
         for i in range(len(self.mutation_counts)):
@@ -166,6 +187,23 @@ class QLearningAgent:
 
             plt.savefig(base_path + "q_action_distribution_" + str(i) + ".png", bbox_inches='tight')
             plt.close()
+
+    def plot_exploration_exploitation_ratio(self, base_path):
+        # Calculate exploration and exploitation rates based on temperature
+        exploration_rates = [self.temperature * (self.temperature_decay ** episode) for episode in range(self.num_episodes)]
+        normalized_exploration_rates = [rate / max(exploration_rates) for rate in exploration_rates]
+        exploitation_rates = [1 - rate for rate in normalized_exploration_rates]
+
+        # Plot the exploration and exploitation rates
+        plt.plot(range(self.num_episodes), normalized_exploration_rates, label='Exploration Rate', color='blue')
+        plt.plot(range(self.num_episodes), exploitation_rates, label='Exploitation Rate', color='orange')
+
+        plt.xlabel('Episodes')
+        plt.ylabel('Rate')
+        plt.title('Exploration vs. Exploitation Ratio (Boltzmann Algorithm)')
+        plt.legend()
+        plt.savefig(base_path + "exploration_exploitation_ratio_boltzmann.png")
+        plt.close()
 
     def plot_state_visits(self, base_path):
         states = list(range(len(self.state_visits)))
@@ -257,6 +295,10 @@ def write_agent_report(agent, name):
         "string": [q.tolist() for q in agent.q_value_convergence['string']],
     }
 
+    exploration_rates = [agent.temperature * (agent.temperature_decay ** episode) for episode in range(agent.num_episodes)]
+    normalized_exploration_rates = [rate / max(exploration_rates) for rate in exploration_rates]
+    exploitation_rates = [1 - rate for rate in normalized_exploration_rates]
+
     report = {
         "name": name,
         "q_tables": q_tables_serializable,
@@ -264,7 +306,11 @@ def write_agent_report(agent, name):
         "state_visits": agent.state_visits.tolist(),
         "mutation_counts": mutation_counts_serializable,
         "mutation_rewards": mutation_rewards_serializable,
-        "q_value_convergence": q_value_convergence_serializable
+        "q_value_convergence": q_value_convergence_serializable,
+        "episode_durations": agent.episode_durations,
+        "exploration_rates": exploration_rates,
+        "exploitation_rates": exploitation_rates,
+        "rewards_all_episodes": agent.rewards_all_episodes
     }
 
     return report

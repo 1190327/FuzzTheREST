@@ -1,5 +1,5 @@
 import utils
-from FuzzAlgorithm.Algorithm import QLearningAgent, write_agent_report
+from FuzzAlgorithm.BoltzmannAlgorithm import QLearningAgent, write_agent_report
 from FuzzAlgorithm.environment import APIFuzzyTestingEnvironment
 from FuzzAlgorithm.services.IfuzzAlgorithmService import IFuzzingService
 import time
