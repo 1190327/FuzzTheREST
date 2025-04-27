@@ -1,0 +1,29 @@
+@startuml
+package "QLearningAgent" {
+
+  [QLearningAgent Core Logic] as Core
+  [Q-Tables\n(int, float, bool, byte, string)] as QTables
+  [Boltzmann Module\n(Softmax Computation)] as Boltzmann
+  [Temperature Control\n(Decay Over Episodes)] as Temperature
+  [Action Selector] as ActionSelector
+  [Environment Interaction\n(API Fuzzing)] as EnvInteraction
+  [Metrics Logger] as Metrics
+}
+
+Core --> QTables : Maintain separate Q-values
+Core --> Boltzmann : Send Q-values for softmax
+Boltzmann --> ActionSelector : Provide action probabilities
+ActionSelector --> EnvInteraction : Send selected mutations
+
+EnvInteraction --> Core : Receive new_state, reward, done
+
+Core --> QTables : Update Q-values (Q-Learning Update)
+Core --> Temperature : Request temperature decay
+
+Temperature --> Boltzmann : Update temperature parameter
+Temperature --> Core : Updated temperature feedback
+
+Core --> Metrics : Log cumulative rewards,\nstate visits, action counts
+Metrics --> [Exploration vs Exploitation Chart]
+
+@enduml

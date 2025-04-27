@@ -1,0 +1,28 @@
+@startuml
+start
+
+:Reset API Environment;
+:Initialize Episode Variables;
+repeat
+  :Select Actions using Softmax\n(Boltzmann Exploration with Temperature);
+  :Apply Mutations to Input Fields;
+  :Send Request to Target API;
+  :Receive API Response;
+  :Calculate Reward Based on Response;
+  :Update Corresponding Q-Tables;
+  :Log Mutation Usage and Rewards;
+  :Decay Temperature Value;
+repeat while (Episode Done?) is (no)
+
+:Record Episode Metrics (Duration, Total Reward);
+:Update Learning Curves and Logs;
+
+if (All Episodes Completed?) then (no)
+  --> Proceed to Next Episode
+else (yes)
+  :Generate Visual Reports and Charts;
+  stop
+endif
+:Reset API Environment;
+
+@enduml

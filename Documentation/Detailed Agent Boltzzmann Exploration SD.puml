@@ -1,0 +1,54 @@
+@startuml
+participant "QLearningAgent" as Agent
+participant "Boltzmann Exploration Module" as Boltzmann
+participant "Q-Tables" as QTables
+participant "Temperature Controller" as TempControl
+participant "Mutation Methods" as Mutations
+participant "Environment (API Interaction)" as Environment
+
+== Boltzmann Action Selection Phase ==
+activate Agent
+
+Agent -> QTables : retrieve Q-values for current state
+activate QTables
+QTables --> Agent : Q-values per input type
+deactivate QTables
+
+Agent -> Boltzmann : compute action probabilities\n(softmax(Q-values / temperature))
+activate Boltzmann
+Boltzmann --> Agent : probability distributions
+deactivate Boltzmann
+
+Agent -> Mutations : select mutation methods probabilistically
+activate Mutations
+Mutations --> Agent : selected mutation actions
+deactivate Mutations
+
+Agent -> Environment : apply mutations and send request
+activate Environment
+Environment --> Agent : API response and reward
+deactivate Environment
+
+Agent -> QTables : update Q-values\n(based on reward and next state)
+activate QTables
+QTables --> Agent : updated Q-tables
+deactivate QTables
+
+== Temperature Decay Phase ==
+
+Agent -> TempControl : request temperature decay
+activate TempControl
+TempControl --> Agent : updated (lower) temperature
+deactivate TempControl
+
+note right of TempControl
+ Temperature decay reduces randomness,\n
+ shifting agent behavior from exploration\n
+ toward exploitation gradually.
+end note
+
+== End of Episode ==
+
+Agent -> Agent : log metrics\n(reward, mutations, episode duration)
+
+@enduml

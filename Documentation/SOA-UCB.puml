@@ -1,0 +1,31 @@
+@startuml
+title Upper Confidence Bound (UCB) Exploration Strategy
+
+class UCBAgent {
+  +actions: List<Action>
+  +totalSteps: int
+  +selectAction(): Action
+}
+
+class Action {
+  <<data>>
+  +actionType: String
+  +estimatedValue: float
+  +selectionCount: int
+}
+
+class UCBSelector {
+  +computeUCB(action: Action, totalSteps: int): float
+  +selectHighestUCB(actions: List<Action>, totalSteps: int): Action
+}
+
+' Relationships
+UCBAgent --> UCBSelector : uses (Selects based on UCB Score)
+
+note right of UCBAgent
+  1. For each action:
+     - Compute UCB Score
+  2. Select action with highest UCB
+end note
+
+@enduml
