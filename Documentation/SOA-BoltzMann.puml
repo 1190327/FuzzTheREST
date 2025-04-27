@@ -1,0 +1,28 @@
+@startuml
+title Boltzmann (Softmax) Exploration Strategy
+
+class BoltzmannAgent {
+  +temperature: float
+  +selectAction(actions: List<Action>): Action
+}
+
+class Action {
+  <<data>>
+  +actionType: String
+  +estimatedValue: float
+}
+
+class SoftmaxSelector {
+  +computeProbabilities(actions: List<Action>, temperature: float): List<float>
+  +selectBasedOnProbability(actions: List<Action>, probabilities: List<float>): Action
+}
+
+' Relationships
+BoltzmannAgent --> SoftmaxSelector : uses (Softmax Computation)
+
+note right of BoltzmannAgent
+  1. Compute softmax probabilities
+  2. Select action probabilistically
+end note
+
+@enduml

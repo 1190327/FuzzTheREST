@@ -1,0 +1,48 @@
+@startuml
+title Reinforcement Learning Model
+
+class Agent {
+  +observeState(state: State)
+  +selectAction(): Action
+  +receiveReward(reward: Reward)
+}
+
+class Environment {
+  +applyAction(action: Action)
+  +provideNextState(): State
+  +provideReward(): Reward
+}
+
+class State {
+  <<data>>
+  +stateData: Object
+  +timeStep: int
+}
+
+class Action {
+  <<data>>
+  +actionType: String
+}
+
+class Reward {
+  <<data>>
+  +rewardValue: float
+}
+
+' Relationships
+Agent --> Environment : send(Action)
+Environment --> Agent : send(State)
+Environment --> Agent : send(Reward)
+
+' Notes to show flow
+note right of Agent
+  1. Observe State
+  2. Select Action
+end note
+
+note left of Environment
+  3. Apply Action
+  4. Return State + Reward
+end note
+
+@enduml

@@ -1,0 +1,49 @@
+@startuml
+package "Fuzz Core" {
+    class OpenAPIController {
+        +get_openapi_spec(request: Request): TaxonomyModel
+    }
+
+    class OrchestratorController {
+        +start_fuzzing_task()
+        +stop_fuzzing_task()
+        +monitor_fuzzing_task()
+    }
+
+    class MapperService {
+        +convert_http_requests(data: List[HTTPRequest]): List[HTTPRequest]
+    }
+
+    class MongoDBService {
+        +store_results(data)
+        +retrieve_results(query)
+    }
+
+    class OrchestrationService {
+        +initialize_task()
+        +execute_task()
+        +terminate_task()
+    }
+
+    class ParserService {
+        +parse_OpenApi_file(file_path: str, ids_fields: dict): dict
+    }
+
+    class Taxonomy {
+        +Attribute
+        +Object
+        +Schema
+        +Parameter
+        +RequestBody
+        +HTTPRequest
+    }
+
+    OpenAPIController --> ParserService : uses >
+    OpenAPIController --> MapperService : uses >
+    OrchestratorController --> OrchestrationService : coordinates >
+    OrchestrationService --> MongoDBService : stores/retrieves >
+    ParserService --> Taxonomy : creates >
+    MapperService --> Taxonomy : maps >
+    OrchestrationService --> Taxonomy : uses >
+}
+@enduml

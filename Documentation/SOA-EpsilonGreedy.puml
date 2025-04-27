@@ -1,0 +1,33 @@
+@startuml
+title Epsilon-Greedy Exploration Strategy
+
+class EpsilonGreedyAgent {
+  +epsilon: float
+  +selectAction(actions: List<Action>): Action
+}
+
+class Action {
+  <<data>>
+  +actionType: String
+}
+
+class RandomSelector {
+  +selectRandomAction(actions: List<Action>): Action
+}
+
+class BestSelector {
+  +selectBestAction(actions: List<Action>): Action
+}
+
+' Relationships
+EpsilonGreedyAgent --> RandomSelector : uses (explore with probability ε)
+EpsilonGreedyAgent --> BestSelector : uses (exploit with probability 1-ε)
+
+note right of EpsilonGreedyAgent
+  If random() < ε:
+    Explore (Random Action)
+  Else:
+    Exploit (Best Action)
+end note
+
+@enduml

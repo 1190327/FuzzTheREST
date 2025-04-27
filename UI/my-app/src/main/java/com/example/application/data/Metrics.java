@@ -93,6 +93,10 @@ public class Metrics {
         private Map<String, Map<String, Integer>> mutation_counts;
         private Map<String, Map<String, List<Double>>> mutation_rewards;
         private QValueConvergence q_value_convergence;
+        private List<Double> episode_durations;
+        private List<Double> exploration_rates;
+        private List<Double> exploitation_rates;
+        private List<Double> rewards_all_episodes;
 
         // Getters and Setters
         public String getName() {
@@ -149,6 +153,38 @@ public class Metrics {
 
         public void setQ_value_convergence(QValueConvergence q_value_convergence) {
             this.q_value_convergence = q_value_convergence;
+        }
+
+        public List<Double> getEpisode_durations() {
+            return episode_durations;
+        }
+
+        public void setEpisode_durations(List<Double> episode_durations) {
+            this.episode_durations = episode_durations;
+        }
+
+        public List<Double> getExploration_rates() {
+            return exploration_rates;
+        }
+
+        public void setExploration_rates(List<Double> exploration_rates) {
+            this.exploration_rates = exploration_rates;
+        }
+
+        public List<Double> getExploitation_rates() {
+            return exploitation_rates;
+        }
+
+        public void setExploitation_rates(List<Double> exploitation_rates) {
+            this.exploitation_rates = exploitation_rates;
+        }
+
+        public List<Double> getRewards_all_episodes() {
+            return rewards_all_episodes;
+        }
+
+        public void setRewards_all_episodes(List<Double> rewards_all_episodes) {
+            this.rewards_all_episodes = rewards_all_episodes;
         }
 
         public static class QTables {

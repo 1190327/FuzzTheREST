@@ -1,15 +1,21 @@
 # %% [markdown]
 # # Imports
 
-# %%
-import gym, requests, random, sys, struct, string, os
-import numpy as np
-import yaml
-import json, copy, time
-from requests.exceptions import ChunkedEncodingError
-import matplotlib.pyplot as plt
+import copy
+import json
+
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+# %%
+import os
+import random
+import requests
+import string
+import struct
+import sys
+import yaml
 from textblob import Word
+
 
 # %% [markdown]
 # # Data Setup
@@ -55,7 +61,6 @@ def create_json_body(object_data, existing_objects: dict):
             return [existing_objects.get(prop_data['items']['$ref'].split('/')[-1])]
 
 
-
 # %%
 def fill_body_values(schema, old_sample, contains_previous, mutation_methods, schema_name, store_id):
     if schema is not None:
@@ -65,7 +70,7 @@ def fill_body_values(schema, old_sample, contains_previous, mutation_methods, sc
 
         for item in sample.items():
             if type(item[1]) is list:
-                list_size = random.randint(0,100)
+                list_size = random.randint(0, 100)
                 values = []
 
                 if list_size <= len(item[1]):
@@ -77,15 +82,19 @@ def fill_body_values(schema, old_sample, contains_previous, mutation_methods, sc
                 for i in range(list_size):
                     if type(values[i]) is dict:
                         if type(schema[item[0]]) is list:
-                            values[i] = fill_body_values(schema[item[0]][0], values[i], contains_previous, mutation_methods, item[0], store_id)
+                            values[i] = fill_body_values(schema[item[0]][0], values[i], contains_previous,
+                                                         mutation_methods, item[0], store_id)
                         else:
-                            values[i] = fill_body_values(schema[item[0]], values[i], contains_previous, mutation_methods, item[0], store_id)
+                            values[i] = fill_body_values(schema[item[0]], values[i], contains_previous,
+                                                         mutation_methods, item[0], store_id)
 
                     else:
                         if type(values[i]) is str and values[i] in {"integer", "double", "float", "string", "boolean"}:
-                            values[i] = get_mutated_value(None, values[i], None, Word(schema_name.capitalize()).singularize())
+                            values[i] = get_mutated_value(None, values[i], None,
+                                                          Word(schema_name.capitalize()).singularize())
                         else:
-                            values[i] = get_mutated_value(values[i], None, mutation_methods[type(values[i])], Word(schema_name.capitalize()).singularize())
+                            values[i] = get_mutated_value(values[i], None, mutation_methods[type(values[i])],
+                                                          Word(schema_name.capitalize()).singularize())
 
                 sample[item[0]] = values
 
@@ -96,12 +105,15 @@ def fill_body_values(schema, old_sample, contains_previous, mutation_methods, sc
 
             else:
                 if type(item[1]) is dict:
-                        sample[item[0]] = fill_body_values(schema[item[0]], item[1], contains_previous, mutation_methods,item[0], store_id)
+                    sample[item[0]] = fill_body_values(schema[item[0]], item[1], contains_previous, mutation_methods,
+                                                       item[0], store_id)
                 else:
                     if type(item[1]) is str and item[1] in {"integer", "double", "float", "string", "boolean"}:
-                        sample[item[0]] = get_mutated_value(None, item[1], None, Word(schema_name.capitalize()).singularize())
+                        sample[item[0]] = get_mutated_value(None, item[1], None,
+                                                            Word(schema_name.capitalize()).singularize())
                     else:
-                        sample[item[0]] = get_mutated_value(item[1], None,  mutation_methods[type(item[1])], Word(schema_name.capitalize()).singularize())
+                        sample[item[0]] = get_mutated_value(item[1], None, mutation_methods[type(item[1])],
+                                                            Word(schema_name.capitalize()).singularize())
 
                     if item[0] == 'id' and store_id:
                         if sample[item[0]] not in ids[Word(schema_name.capitalize()).singularize()]:
@@ -109,13 +121,14 @@ def fill_body_values(schema, old_sample, contains_previous, mutation_methods, sc
 
         return sample
 
+
 def fill_previous_body(schema, old_sample):
     sample = copy.deepcopy(schema)
     for item in old_sample.items():
         if type(item[1]) is list:
             if len(item[1]) > 0:
                 if item[1][0] is dict:
-                    #TODO Implement to when it is a dict inside a list
+                    # TODO Implement to when it is a dict inside a list
                     raise ValueError("Unsuported dict inside list verification")
                 else:
                     sample[item[0]] = item[1]
@@ -124,7 +137,6 @@ def fill_previous_body(schema, old_sample):
                 sample[item[0]] = fill_previous_body(sample[item[0]], item[1])
             else:
                 sample[item[0]] = item[1]
-
 
     return sample
 
@@ -135,7 +147,7 @@ def fill_parameter_values(input_parameters, contains_previous, mutation_methods)
         if 'id' in parameter_name:
             parameter_name = parameter_name.replace('id', '').capitalize()
         if type(parameter['schema']) is list:
-            list_size = random.randint(1,100)
+            list_size = random.randint(1, 100)
             values = []
             if contains_previous:
                 if list_size <= len(parameter['sample']):
@@ -155,7 +167,8 @@ def fill_parameter_values(input_parameters, contains_previous, mutation_methods)
 
         else:
             if contains_previous:
-                parameter['sample'] = get_mutated_value(parameter['sample'], parameter['schema'], mutation_methods[type(parameter['sample'])], parameter_name)
+                parameter['sample'] = get_mutated_value(parameter['sample'], parameter['schema'],
+                                                        mutation_methods[type(parameter['sample'])], parameter_name)
             else:
                 parameter['sample'] = get_mutated_value(None, parameter['schema'], None, parameter_name)
 
@@ -163,20 +176,26 @@ def fill_parameter_values(input_parameters, contains_previous, mutation_methods)
 
 
 def fill_values(function, contains_previous_values, mutation_methods, store_id):
-    function['input_parameters'] = fill_parameter_values(function['input_parameters'], contains_previous_values, mutation_methods)
+    function['input_parameters'] = fill_parameter_values(function['input_parameters'], contains_previous_values,
+                                                         mutation_methods)
 
     if type(function['input_body']['schema']) is list:
-        list_size = random.randint(0,100)
+        list_size = random.randint(0, 100)
         list_schema = function['input_body']['schema'][0]
         items = []
         for i in range(list_size):
-            items.append(fill_body_values(list_schema, function['input_body']['sample'], contains_previous_values, mutation_methods, function['input_body']['schema_name'], store_id))
+            items.append(fill_body_values(list_schema, function['input_body']['sample'], contains_previous_values,
+                                          mutation_methods, function['input_body']['schema_name'], store_id))
 
         function['input_body']['sample'] = items
     else:
-        function['input_body']['sample'] = fill_body_values(function['input_body']['schema'], function['input_body']['sample'], contains_previous_values, mutation_methods, function['input_body']['schema_name'], store_id)
+        function['input_body']['sample'] = fill_body_values(function['input_body']['schema'],
+                                                            function['input_body']['sample'], contains_previous_values,
+                                                            mutation_methods, function['input_body']['schema_name'],
+                                                            store_id)
 
     return function
+
 
 # %% [markdown]
 # # Mutation Methods
@@ -203,6 +222,7 @@ def bit_flips(data):
     else:
         raise ValueError("Unsupported data type for bit flips")
 
+
 # Byte Shuffling: Shuffles the order of the bytes in the input data.
 def byte_shuffling(data):
     if isinstance(data, str):
@@ -218,6 +238,7 @@ def byte_shuffling(data):
         return data
     else:
         raise ValueError("Unsupported data type for byte shuffling")
+
 
 # Byte Injection/Deletion: Adds or removes random bytes, causing structural changes to the input data.
 def byte_injection(data):
@@ -236,6 +257,7 @@ def byte_injection(data):
     else:
         raise ValueError("Unsupported data type for byte injection/deletion")
 
+
 def byte_deletion(data):
     if isinstance(data, str):
         code_points = list(data)
@@ -251,6 +273,7 @@ def byte_deletion(data):
         return bytes(mutated_data)
     else:
         raise ValueError("Unsupported data type for byte injection/deletion")
+
 
 # Bytes Substitution: Randomly replaces bytes with others.
 def bytes_substitution(data):
@@ -270,22 +293,24 @@ def bytes_substitution(data):
     else:
         raise ValueError("Unsupported data type for bytes substitution")
 
+
 # Truncation: Shortens the input data by removing trailing bytes.
 def truncation(data):
     if isinstance(data, str):
         if len(data) > 1:
-            truncation_length = random.randint(0, len(data)-1)
+            truncation_length = random.randint(0, len(data) - 1)
             return data[:-truncation_length]
         else:
             return data
     elif isinstance(data, bytes):
         if len(data) > 1:
-            truncation_length = random.randint(0, len(data)-1)
+            truncation_length = random.randint(0, len(data) - 1)
             return data[:-truncation_length]
         else:
             return data
     else:
         raise ValueError("Unsupported data type for truncation")
+
 
 # Dictionary Fuzzy: only works for integers
 def dictionary_fuzzy(schema_name, ids):
@@ -294,6 +319,7 @@ def dictionary_fuzzy(schema_name, ids):
             value = random.choice(ids[schema_name])
             return value
     return None
+
 
 def arithmetic_addition(data):
     if isinstance(data, float):
@@ -305,6 +331,7 @@ def arithmetic_addition(data):
         return new_value
     else:
         raise ValueError("Unsupported data type for arithmetic operations")
+
 
 def arithmetic_subtraction(data):
     if isinstance(data, float):
@@ -319,6 +346,7 @@ def arithmetic_subtraction(data):
     else:
         raise ValueError("Unsupported data type for arithmetic operations")
 
+
 def arithmetic_multiplication(data):
     if isinstance(data, float):
         return data * random.uniform(sys.float_info.min, sys.float_info.max)
@@ -332,6 +360,7 @@ def arithmetic_multiplication(data):
     else:
         raise ValueError("Unsupported data type for arithmetic operations")
 
+
 def arithmetic_division(data):
     if isinstance(data, float):
         return data / random.uniform(sys.float_info.min, sys.float_info.max)
@@ -339,6 +368,7 @@ def arithmetic_division(data):
         return data // random.randrange(-2147483648, 2147483647)
     else:
         raise ValueError("Unsupported data type for arithmetic operations")
+
 
 # Random Generation: Randomly generates input of a certain type.
 def random_generation(data_type):
@@ -356,6 +386,7 @@ def random_generation(data_type):
         return bytes(random.randint(0, 255) for _ in range(size))
     else:
         raise ValueError("Unsupported data type for random generation")
+
 
 # %%
 # Method to Convert to Binary
@@ -375,6 +406,7 @@ def to_binary(data):
 
     return binary_data
 
+
 # Method to Convert From Binary to original data type.
 def from_binary(binary_data, data_type):
     if data_type == str:
@@ -392,37 +424,39 @@ def from_binary(binary_data, data_type):
 
     return output_value
 
+
 # %%
 def get_mutated_value(old_value, datatype, method, schema_name):
-        if old_value is None:
-            if datatype == 'integer':
-                return random_generation(int)
-            elif datatype == 'float' or datatype == 'double':
-                return random_generation(float)
-            elif datatype == 'boolean':
-                return random_generation(bool)
-            elif datatype == 'string':
-                return random_generation(str)
-            else:
-                random_generation(bytes)
+    if old_value is None:
+        if datatype == 'integer':
+            return random_generation(int)
+        elif datatype == 'float' or datatype == 'double':
+            return random_generation(float)
+        elif datatype == 'boolean':
+            return random_generation(bool)
+        elif datatype == 'string':
+            return random_generation(str)
         else:
-            datatype = type(old_value)
-            if method is random_generation:
-                return random_generation(datatype)
-            elif method is dictionary_fuzzy:
-                new_value = dictionary_fuzzy(schema_name, ids)
-                if new_value is None:
-                    return old_value
-                else:
-                    return new_value
-            if datatype is int or datatype is float:
-                if method is arithmetic_division or method is arithmetic_addition or method is arithmetic_multiplication or method is arithmetic_subtraction:
-                    return method(old_value)
-                else:
-                    new_value_bin = to_binary(old_value)
-                    return from_binary(method(new_value_bin), datatype)
+            random_generation(bytes)
+    else:
+        datatype = type(old_value)
+        if method is random_generation:
+            return random_generation(datatype)
+        elif method is dictionary_fuzzy:
+            new_value = dictionary_fuzzy(schema_name, ids)
+            if new_value is None:
+                return old_value
             else:
+                return new_value
+        if datatype is int or datatype is float:
+            if method is arithmetic_division or method is arithmetic_addition or method is arithmetic_multiplication or method is arithmetic_subtraction:
                 return method(old_value)
+            else:
+                new_value_bin = to_binary(old_value)
+                return from_binary(method(new_value_bin), datatype)
+        else:
+            return method(old_value)
+
 
 # %% [markdown]
 # # Reinforcement Learning FuzzAlgorithm
@@ -432,6 +466,7 @@ import gym
 from gym.spaces import MultiDiscrete, Discrete
 import numpy as np
 
+
 class APIFuzzyTestingEnvironment(gym.Env):
     def __init__(self, base_url, function, mutation_methods):
         super(APIFuzzyTestingEnvironment, self).__init__()
@@ -440,7 +475,7 @@ class APIFuzzyTestingEnvironment(gym.Env):
         self.response = None
         self.mutation_methods = mutation_methods  # List of mutation methods.
         self.action_space: MultiDiscrete = MultiDiscrete([len(methods) for methods in mutation_methods])
-        self.observation_space: Discrete = Discrete(5) # Possible HTTP error codes.
+        self.observation_space: Discrete = Discrete(5)  # Possible HTTP error codes.
         self.done = False
 
     def step(self, action):
@@ -470,9 +505,7 @@ class APIFuzzyTestingEnvironment(gym.Env):
                 else:
                     self.function = fill_values(self.function, True, mutation_methods, False)
 
-
             resp = self._execute_action(self.function)
-
 
         self.response = resp
         requests_log.append({"status_code": self.response.status_code, "message": self.response.content})
@@ -509,28 +542,36 @@ class APIFuzzyTestingEnvironment(gym.Env):
 
             elif function['method'] == 'PUT':
                 if len(parameters) > 0:
-                    return requests.put(self.base_url + path, json=function['input_body']['sample'], headers=headers, params=parameters, timeout=40)
+                    return requests.put(self.base_url + path, json=function['input_body']['sample'], headers=headers,
+                                        params=parameters, timeout=40)
                 else:
-                    return requests.put(self.base_url + path, json=function['input_body']['sample'], headers=headers, timeout=40)
+                    return requests.put(self.base_url + path, json=function['input_body']['sample'], headers=headers,
+                                        timeout=40)
 
             elif function['method'] == 'DELETE':
                 if len(parameters) > 0:
-                    return requests.delete(self.base_url + path, json=function['input_body']['sample'], headers=headers, params=parameters, timeout=40)
+                    return requests.delete(self.base_url + path, json=function['input_body']['sample'], headers=headers,
+                                           params=parameters, timeout=40)
                 else:
-                    return requests.delete(self.base_url + path, json=function['input_body']['sample'], headers=headers, timeout=40)
+                    return requests.delete(self.base_url + path, json=function['input_body']['sample'], headers=headers,
+                                           timeout=40)
 
             elif function['method'] == 'POST':
                 if function['content-type'] == "multipart/form-data":
                     files = {'file': function['input_body']['sample'].pop('file')}
                     if len(parameters) > 0:
-                        return requests.post(self.base_url + path, json=function['input_body']['sample'], files=files, params=parameters,timeout=40)
+                        return requests.post(self.base_url + path, json=function['input_body']['sample'], files=files,
+                                             params=parameters, timeout=40)
                     else:
-                        return requests.post(self.base_url + path, json=function['input_body']['sample'], files=files, timeout=40)
+                        return requests.post(self.base_url + path, json=function['input_body']['sample'], files=files,
+                                             timeout=40)
                 else:
                     if len(parameters) > 0:
-                        return requests.post(self.base_url + path, json=function['input_body']['sample'], headers=headers, params=parameters,timeout=40)
+                        return requests.post(self.base_url + path, json=function['input_body']['sample'],
+                                             headers=headers, params=parameters, timeout=40)
                     else:
-                        return requests.post(self.base_url + path, json=function['input_body']['sample'], headers=headers, timeout=40)
+                        return requests.post(self.base_url + path, json=function['input_body']['sample'],
+                                             headers=headers, timeout=40)
         except:
             return "error"
 
@@ -550,7 +591,6 @@ class APIFuzzyTestingEnvironment(gym.Env):
             return 10
 
         return 0
-
 
     def _update_environment_state(self):
         # Implement any necessary state updates based on the API response
@@ -590,9 +630,12 @@ class APIFuzzyTestingEnvironment(gym.Env):
 
         pass
 
+
 # %%
 class QLearningAgent:
-    def __init__(self, env: APIFuzzyTestingEnvironment, mutation_methods, max_steps_per_episode, learning_rate=0.1, discount_factor=0.9, exploration_rate=0.1, min_exploration_rate=0.1, max_exploration_rate=1, exploration_decay_rate=0.01):
+    def __init__(self, env: APIFuzzyTestingEnvironment, mutation_methods, max_steps_per_episode, learning_rate=0.1,
+                 discount_factor=0.9, exploration_rate=0.1, min_exploration_rate=0.1, max_exploration_rate=1,
+                 exploration_decay_rate=0.01):
         self.env = env
         self.int_q_table = np.zeros([env.observation_space.n, len(mutation_methods[0])])
         self.float_q_table = np.zeros([env.observation_space.n, len(mutation_methods[1])])
@@ -607,10 +650,12 @@ class QLearningAgent:
         self.exploration_decay_rate = exploration_decay_rate
         self.max_steps_per_episode = max_steps_per_episode
         self.episode_rewards = []  # To store the rewards obtained in each episode
-        self.rewards_all_episodes=[]
+        self.rewards_all_episodes = []
         self.mutation_methods = mutation_methods
-        self.mutation_counts = {i: {method: 0 for method in mutation_methods[i]} for i in range(env.observation_space.n)}
-        self.mutation_rewards = {i: {method: [] for method in mutation_methods[i]} for i in range(env.observation_space.n)}
+        self.mutation_counts = {i: {method: 0 for method in mutation_methods[i]} for i in
+                                range(env.observation_space.n)}
+        self.mutation_rewards = {i: {method: [] for method in mutation_methods[i]} for i in
+                                 range(env.observation_space.n)}
         self.state_visits = np.zeros(env.observation_space.n)
         self.q_value_convergence = {}
         self.num_episodes = 30
@@ -621,16 +666,16 @@ class QLearningAgent:
             action = self.env.action_space.sample()
         else:
             action = []
-            action.append(np.argmax(int_q_table[state,:]))
-            action.append(np.argmax(float_q_table[state,:]))
-            action.append(np.argmax(bool_q_table[state,:]))
-            action.append(np.argmax(byte_q_table[state,:]))
-            action.append(np.argmax(string_q_table[state,:]))
+            action.append(np.argmax(int_q_table[state, :]))
+            action.append(np.argmax(float_q_table[state, :]))
+            action.append(np.argmax(bool_q_table[state, :]))
+            action.append(np.argmax(byte_q_table[state, :]))
+            action.append(np.argmax(string_q_table[state, :]))
         return action
 
     def update_q_table(self, state, action, reward, new_state, q_table):
         q_table[state, action] = q_table[state, action] * (1 - self.learning_rate) + \
-            self.learning_rate * (reward + self.discount_factor * np.max(q_table[new_state, :]))
+                                 self.learning_rate * (reward + self.discount_factor * np.max(q_table[new_state, :]))
 
     def train(self, num_episodes):
         self.q_value_convergence = {
@@ -651,7 +696,8 @@ class QLearningAgent:
             print(episode)
 
             for step in range(self.max_steps_per_episode):
-                action = self.choose_action(state, self.int_q_table, self.float_q_table, self.bool_q_table, self.byte_q_table, self.string_q_table)
+                action = self.choose_action(state, self.int_q_table, self.float_q_table, self.bool_q_table,
+                                            self.byte_q_table, self.string_q_table)
                 new_state, reward, done = self.env.step(action)
                 self.update_q_table(state, action[0], reward, new_state, self.int_q_table)
                 self.update_q_table(state, action[1], reward, new_state, self.float_q_table)
@@ -674,7 +720,8 @@ class QLearningAgent:
 
             # Exploration rate decay
             self.exploration_rate = self.min_exploration_rate + \
-                (self.max_exploration_rate - self.min_exploration_rate) * np.exp(-self.exploration_decay_rate*episode)
+                                    (self.max_exploration_rate - self.min_exploration_rate) * np.exp(
+                -self.exploration_decay_rate * episode)
 
             self.rewards_all_episodes.append(rewards_current_episode)
 
@@ -685,14 +732,14 @@ class QLearningAgent:
             self.q_value_convergence['string'].append(np.copy(self.string_q_table))
 
         # Calculate and print the average reward per hundred episodes
-        rewards_per_number_episodes = np.split(np.array(self.rewards_all_episodes),num_episodes/num_episodes)
+        rewards_per_number_episodes = np.split(np.array(self.rewards_all_episodes), num_episodes / num_episodes)
         count = num_episodes
         print("********Average reward per number of episodes********\n")
         for r in rewards_per_number_episodes:
-            print(count, ": ", str(sum(r/num_episodes)))
+            print(count, ": ", str(sum(r / num_episodes)))
             count += num_episodes
 
-    def plot_q_value_convergence(self, file_server_url,name):
+    def plot_q_value_convergence(self, file_server_url, name):
         x = np.arange(0, self.num_episodes)
         data_types = ['int', 'float', 'bool', 'byte', 'string']
         for data_type in data_types:
@@ -706,7 +753,7 @@ class QLearningAgent:
         plt.title('Q-value Convergence')
 
         # Save the plot to a temporary file
-        temp_filename = "q_value_convergence.png"+ name
+        temp_filename = "q_value_convergence.png" + name
         plt.savefig(temp_filename)
         plt.close()
 
@@ -727,7 +774,8 @@ class QLearningAgent:
     def plot_learning_curve(self, num_episodes):
         # Calculate the average reward over a fixed number of episodes (e.g., last 100 episodes) and plot the learning curve
         window_size = 10
-        average_rewards = [np.mean(self.episode_rewards[i:i + window_size]) for i in range(len(self.episode_rewards) - window_size + 1)]
+        average_rewards = [np.mean(self.episode_rewards[i:i + window_size]) for i in
+                           range(len(self.episode_rewards) - window_size + 1)]
         plt.plot(range(window_size, num_episodes + 1), average_rewards)
         plt.xlabel('Episodes')
         plt.ylabel('Average Reward')
@@ -754,7 +802,8 @@ class QLearningAgent:
             plt.title(f'Action Distribution for {data_types[i]}')
 
             # Create custom legend handles for each mutation method
-            legend_handles = [mpatches.Patch(color=colors[j], label=mutation_method.__name__) for j, mutation_method in enumerate(mutation_methods)]
+            legend_handles = [mpatches.Patch(color=colors[j], label=mutation_method.__name__) for j, mutation_method in
+                              enumerate(mutation_methods)]
 
             # Move the legend outside the plot
             plt.legend(handles=legend_handles, loc='upper left', bbox_to_anchor=(1, 1))
@@ -791,24 +840,23 @@ class QLearningAgent:
         plt.savefig(base_path + "state_visits.png", bbox_inches='tight')
         plt.close()
 
-
     def test(self):
         for episode in range(5):
             state = self.env.reset()
             done = False
 
-            print("*******Episode ", episode+1, "*******\n\n")
+            print("*******Episode ", episode + 1, "*******\n\n")
             for step in range(self.max_steps_per_episode):
                 # Choose action with highest Q-value for current state
                 self.env.render()
                 # Take new action
                 # time.sleep(0.3)
                 action = []
-                action.append(np.argmax(self.int_q_table[state,:]))
-                action.append(np.argmax(self.float_q_table[state,:]))
-                action.append(np.argmax(self.bool_q_table[state,:]))
-                action.append(np.argmax(self.byte_q_table[state,:]))
-                action.append(np.argmax(self.string_q_table[state,:]))
+                action.append(np.argmax(self.int_q_table[state, :]))
+                action.append(np.argmax(self.float_q_table[state, :]))
+                action.append(np.argmax(self.bool_q_table[state, :]))
+                action.append(np.argmax(self.byte_q_table[state, :]))
+                action.append(np.argmax(self.string_q_table[state, :]))
                 new_state, reward, done = self.env.step(action)
 
                 if done:
@@ -823,6 +871,7 @@ class QLearningAgent:
                     # time.sleep(3)
 
                 state = new_state
+
 
 def write_agent_report(base_folder, agent_name, agent: QLearningAgent):
     # time.sleep(3)
@@ -865,6 +914,7 @@ def write_agent_report(base_folder, agent_name, agent: QLearningAgent):
     except IOError as e:
         print("Error:", e)
 
+
 # %%
 # Read the OpenAPI specification file (assuming it's in YAML format)
 
@@ -877,7 +927,7 @@ base_url = spec['servers'][0]['url']
 # Load schemas
 schemas = {}
 
-#ID dicts
+# ID dicts
 ids = {}
 
 for object_name, object_data in spec['components']['schemas'].items():
@@ -901,7 +951,7 @@ for path, path_item in spec['paths'].items():
         request_parameters = operation.get('parameters')
         input_schema = None
         parameter_name = None
-        parameter_in  = None
+        parameter_in = None
         parameter_schema = None
         parameter_type = None
         schema = None
@@ -927,7 +977,7 @@ for path, path_item in spec['paths'].items():
                 })
 
         # Extract input schema
-        if(request_body != None and 'content' in request_body):
+        if (request_body != None and 'content' in request_body):
             input_schema = request_body['content']
             if 'application/json' in input_schema:
                 input_applicaton = 'application/json'
@@ -974,26 +1024,34 @@ for path, path_item in spec['paths'].items():
         # Store the information in the functions dictionary
         functions[function_name] = function
 
-
 # %%
 # Initialize mutation methods for different data types
 # int_mutation_methods = [dictionary_fuzzy]
-int_mutation_methods = [bit_flips, byte_shuffling, bytes_substitution, arithmetic_addition, arithmetic_subtraction, arithmetic_multiplication, arithmetic_division, random_generation, dictionary_fuzzy]
-float_mutation_methods = [bit_flips, byte_shuffling, bytes_substitution, arithmetic_addition, arithmetic_subtraction, arithmetic_multiplication, arithmetic_division, random_generation]
+int_mutation_methods = [bit_flips, byte_shuffling, bytes_substitution, arithmetic_addition, arithmetic_subtraction,
+                        arithmetic_multiplication, arithmetic_division, random_generation, dictionary_fuzzy]
+float_mutation_methods = [bit_flips, byte_shuffling, bytes_substitution, arithmetic_addition, arithmetic_subtraction,
+                          arithmetic_multiplication, arithmetic_division, random_generation]
 bool_mutation_methods = [bit_flips, byte_shuffling, random_generation]
-byte_mutation_methods = [bit_flips, byte_shuffling, byte_injection, byte_deletion, bytes_substitution, truncation, arithmetic_addition, arithmetic_subtraction, arithmetic_multiplication, arithmetic_division, random_generation]
-str_mutation_methods = [bit_flips, byte_shuffling, byte_injection, byte_deletion, bytes_substitution, truncation, random_generation]
+byte_mutation_methods = [bit_flips, byte_shuffling, byte_injection, byte_deletion, bytes_substitution, truncation,
+                         arithmetic_addition, arithmetic_subtraction, arithmetic_multiplication, arithmetic_division,
+                         random_generation]
+str_mutation_methods = [bit_flips, byte_shuffling, byte_injection, byte_deletion, bytes_substitution, truncation,
+                        random_generation]
 
 # Combine all mutation methods into a single list
-mutation_methods = [int_mutation_methods, float_mutation_methods, bool_mutation_methods, byte_mutation_methods, str_mutation_methods]
+mutation_methods = [int_mutation_methods, float_mutation_methods, bool_mutation_methods, byte_mutation_methods,
+                    str_mutation_methods]
 
 # scenarios = [["addPet", "updatePet", "getPetById", "findPetsByStatus", "findPetsByTags", "uploadFile", "updatePetWithForm", "deletePet"]]
 # scenarios = [["createUser", "loginUser", "updateUser", "logoutUser", "getUserByName", "deleteUser"]]
 # scenarios = [["placeOrder", "getOrderById", "getInventory", "deleteOrder"]]
 # scenarios = [["loginUser", "addPet", "uploadFile", "getPetById", "placeOrder", "getInventory", "getOrderById", "logoutUser"]]
-scenarios = [["addPet", "updatePet", "getPetById", "findPetsByStatus", "findPetsByTags", "uploadFile", "updatePetWithForm", "deletePet"], ["createUser", "loginUser", "updateUser", "logoutUser", "getUserByName", "deleteUser"], ["placeOrder", "getOrderById", "getInventory", "deleteOrder"]]
+scenarios = [
+    ["addPet", "updatePet", "getPetById", "findPetsByStatus", "findPetsByTags", "uploadFile", "updatePetWithForm",
+     "deletePet"], ["createUser", "loginUser", "updateUser", "logoutUser", "getUserByName", "deleteUser"],
+    ["placeOrder", "getOrderById", "getInventory", "deleteOrder"]]
 env = None
-requests_log=[]
+requests_log = []
 for scenario_functions in scenarios:
     for function in scenario_functions:
         requests_log = []
@@ -1005,7 +1063,7 @@ for scenario_functions in scenarios:
             env._change_environment_function(functions[function])
 
         # Create an instance of the Q-Learning agent
-        agent = QLearningAgent(env,mutation_methods,10,exploration_rate=1)
+        agent = QLearningAgent(env, mutation_methods, 10, exploration_rate=1)
 
         # Train the agent
         agent.train(num_episodes=500)

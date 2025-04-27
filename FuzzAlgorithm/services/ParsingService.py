@@ -1,6 +1,6 @@
 from typing import Dict
 
-from FuzzCore.Taxonomy  import Attribute, Object, Schema, Parameter, RequestBody, HTTPRequest
+from FuzzCore.Taxonomy import Attribute, Object, Schema, Parameter, RequestBody, HTTPRequest
 
 
 def parse_attribute(data: Dict) -> Attribute:
@@ -11,13 +11,16 @@ def parse_attribute(data: Dict) -> Attribute:
         value=convert_attribute_value(data.get('value'))
     )
 
+
 def parse_object(data: Dict) -> Object:
     attributes = [parse_attribute(attr) for attr in data['attributes']]
     return Object(attributes)
 
+
 def parse_schema(data: Dict) -> Schema:
     objects = [parse_object(obj) for obj in data['objects']]
     return Schema(schema_name=data['name'], objects=objects)
+
 
 def parse_parameter(data: Dict) -> Parameter:
     return Parameter(
@@ -27,15 +30,19 @@ def parse_parameter(data: Dict) -> Parameter:
         sample=data['sample']
     )
 
+
 def parse_request_body(data: Dict) -> RequestBody:
     schema = parse_schema(data['schema_info'])
-    sample=parse_schema(data['sample'])
+    sample = parse_schema(data['sample'])
     return RequestBody(schema=schema, sample=sample)
+
 
 def parse_http_requests(data: Dict) -> Dict:
     return {key: parse_http_request(value) for key, value in data.items()}
+
+
 def parse_http_request(data: Dict) -> HTTPRequest:
-    if data.get('parameters')!=[]:
+    if data.get('parameters') != []:
         parameters = [parse_parameter(param) for param in data.get('parameters', [])]
     else:
         parameters = []
@@ -48,14 +55,15 @@ def parse_http_request(data: Dict) -> HTTPRequest:
         request_body=request_body
     )
 
-def convert_attribute_value(value):
 
+def convert_attribute_value(value):
     if isinstance(value, dict):
         return parse_object(value)
     elif isinstance(value, list):
         return [convert_attribute_value(item) for item in value]
     else:
         return value
+
 
 def convert_attribute_type(type):
     if isinstance(type, dict):

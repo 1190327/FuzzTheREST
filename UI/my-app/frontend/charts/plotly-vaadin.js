@@ -113,3 +113,78 @@ window.renderLearningCurveChart = function(containerId, dataJson) {
 
     Plotly.newPlot(containerId, [trace], layout);
 };
+
+window.renderEpisodeDurationsChart = function(containerId, dataJson) {
+    const data = JSON.parse(dataJson);
+    const xValues = Array.from({length: data.episodeDurations.length}, (v, k) => k + 1);
+    const yValues = data.episodeDurations;
+
+    const trace = {
+        x: xValues,
+        y: yValues,
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { color: 'red' },
+        line: { shape: 'spline' }
+    };
+
+    const layout = {
+        title: 'Episode Durations',
+        xaxis: { title: 'Episode' },
+        yaxis: { title: 'Duration (seconds)' }
+    };
+
+    Plotly.newPlot(containerId, [trace], layout);
+};
+
+window.renderExplorationExploitationRatioChart = function(containerId, dataJson) {
+    const data = JSON.parse(dataJson);
+    const xValues = Array.from({length: data.explorationRates.length}, (v, k) => k + 1);
+    const explorationTrace = {
+        x: xValues,
+        y: data.explorationRates,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Exploration Rate',
+        marker: { color: 'blue' }
+    };
+
+    const exploitationTrace = {
+        x: xValues,
+        y: data.exploitationRates,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Exploitation Rate',
+        marker: { color: 'red' }
+    };
+
+    const layout = {
+        title: 'Exploration vs. Exploitation Ratio',
+        xaxis: { title: 'Episodes' },
+        yaxis: { title: 'Rate' }
+    };
+
+    Plotly.newPlot(containerId, [explorationTrace, exploitationTrace], layout);
+};
+
+window.renderCumulativeRewardChart = function(containerId, dataJson) {
+    const data = JSON.parse(dataJson);
+    const xValues = Array.from({length: data.cumulativeRewards.length}, (v, k) => k + 1);
+
+    const trace = {
+        x: xValues,
+        y: data.cumulativeRewards,
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { color: 'blue' },
+        line: { shape: 'spline' }
+    };
+
+    const layout = {
+        title: 'Cumulative Reward per Episode',
+        xaxis: { title: 'Episode' },
+        yaxis: { title: 'Cumulative Reward' }
+    };
+
+    Plotly.newPlot(containerId, [trace], layout);
+};

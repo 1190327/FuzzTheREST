@@ -1,0 +1,59 @@
+@startuml
+package "Fuzz Algorithm" {
+    class QLearningAgent {
+        +train(numEpisodes: int, requestsLog: List, crashes: dict, hangs: dict): void
+        +test(requestsLog: List, crashes: dict, hangs: dict): void
+    }
+
+    class APIFuzzyTestingEnvironment {
+        +_change_environment_function(function: str): void
+        +step(action: str): Tuple
+        +reset(): void
+    }
+
+    class QlearningService {
+        +fuzz(data: FuzzingData): dict
+    }
+
+    class FuzzingData {
+        +base_url: str
+        +function: dict
+        +scenarios: List
+        +ids: List
+        +max_steps_per_episode: int
+        +exploration_rate: float
+        +num_episodes: int
+    }
+
+    class Utils {
+        +mutation_methods: List
+    }
+
+    class ParsingService {
+        +parse_attribute(data: Dict): Attribute
+        +parse_object(data: Dict): Object
+        +parse_schema(data: Dict): Schema
+        +parse_parameter(data: Dict): Parameter
+        +parse_request_body(data: Dict): RequestBody
+        +parse_http_requests(data: Dict): Dict
+    }
+
+    class FuzzingController {
+        +initialize(data: dict): dict
+    }
+
+    interface IFuzzingService {
+        +fuzz(data: dict): dict
+    }
+
+    QlearningService --> QLearningAgent : uses >
+    QlearningService --> APIFuzzyTestingEnvironment : initializes >
+    QlearningService --> FuzzingData : processes >
+    QLearningAgent --> APIFuzzyTestingEnvironment : interacts >
+    QLearningAgent --> Utils : uses >
+    FuzzingController --> ParsingService : uses >
+    FuzzingController --> IFuzzingService : depends >
+    ParsingService --> FuzzingData : parses >
+    FuzzingController ..> QlearningService : <<depends>> via IFuzzingService
+}
+@enduml

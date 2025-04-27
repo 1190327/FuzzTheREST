@@ -1,4 +1,5 @@
 import random
+import time
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -23,6 +24,7 @@ class QLearningAgent:
         self.max_exploration_rate = max_exploration_rate
         self.exploration_decay_rate = exploration_decay_rate
         self.max_steps_per_episode = max_steps_per_episode
+        self.episode_durations = []  # To store the duration of each episode
         self.episode_rewards = []  # To store the rewards obtained in each episode
         self.rewards_all_episodes = []
         self.mutation_methods = mutation_methods
@@ -51,7 +53,7 @@ class QLearningAgent:
         q_table[state, action] = q_table[state, action] * (1 - self.learning_rate) + \
                                  self.learning_rate * (reward + self.discount_factor * np.max(q_table[new_state, :]))
 
-    def train(self, num_episodes,request_logs,crashes,hangs):
+    def train(self, num_episodes, request_logs, crashes, hangs):
         self.q_value_convergence = {
             'int': [],
             'float': [],
@@ -66,13 +68,14 @@ class QLearningAgent:
             done = False
             state = self.env.reset()
             rewards_current_episode = 0
+            start_time = time.time()
 
             print(episode)
 
             for step in range(self.max_steps_per_episode):
                 action = self.choose_action(state, self.int_q_table, self.float_q_table, self.bool_q_table,
                                             self.byte_q_table, self.string_q_table)
-                new_state, reward, done = self.env.step(action, request_logs,crashes,hangs)
+                new_state, reward, done = self.env.step(action, request_logs, crashes, hangs)
 
                 self.update_q_table(state, action[0], reward, new_state, self.int_q_table)
                 self.update_q_table(state, action[1], reward, new_state, self.float_q_table)
@@ -93,6 +96,8 @@ class QLearningAgent:
                 if done is True:
                     break
 
+            end_time = time.time()
+            self.episode_durations.append(end_time - start_time)
             # Exploration rate decay
             self.exploration_rate = self.min_exploration_rate + \
                                     (self.max_exploration_rate - self.min_exploration_rate) * np.exp(
@@ -140,6 +145,21 @@ class QLearningAgent:
         plt.title('Learning Curve')
         plt.show()
 
+    def plot_cumulative_rewards(self, base_path):
+        # Plot cumulative rewards for all episodes
+        plt.plot(range(1, len(self.rewards_all_episodes) + 1), self.rewards_all_episodes, label='Cumulative Reward')
+
+        # Calculate and display the average cumulative reward
+        avg_cumulative_reward = np.mean(self.rewards_all_episodes)
+        plt.axhline(y=avg_cumulative_reward, color='r', linestyle='--', label=f'Average Reward: {avg_cumulative_reward:.2f}')
+
+        plt.xlabel('Episodes')
+        plt.ylabel('Cumulative Reward')
+        plt.title('Cumulative Reward per Episode')
+        plt.legend()
+        plt.savefig(base_path + "cumulative_rewards.png")
+        plt.close()
+
     def plot_action_distribution(self, base_path):
         data_types = ['int', 'float', 'bool', 'byte', 'string']
         for i in range(len(self.mutation_counts)):
@@ -173,6 +193,22 @@ class QLearningAgent:
             plt.savefig(base_path + "q_action_distribution_" + str(i) + ".png", bbox_inches='tight')
             plt.close()
 
+    def plot_exploration_exploitation_ratio(self, base_path):
+        exploration_rates = [self.min_exploration_rate +
+                             (self.max_exploration_rate - self.min_exploration_rate) * np.exp(
+            -self.exploration_decay_rate * episode)
+                             for episode in range(self.num_episodes)]
+        exploitation_rates = [1 - rate for rate in exploration_rates]
+
+        plt.plot(range(self.num_episodes), exploration_rates, label='Exploration Rate')
+        plt.plot(range(self.num_episodes), exploitation_rates, label='Exploitation Rate')
+        plt.xlabel('Episodes')
+        plt.ylabel('Rate')
+        plt.title('Exploration vs. Exploitation Ratio')
+        plt.legend()
+        plt.savefig(base_path + "exploration_exploitation_ratio.png")
+        plt.close()
+
     def plot_state_visits(self, base_path):
         states = list(range(len(self.state_visits)))
         visit_counts = list(self.state_visits)
@@ -198,7 +234,7 @@ class QLearningAgent:
         plt.savefig(base_path + "state_visits.png", bbox_inches='tight')
         plt.close()
 
-    def test(self,request_logs,crashes,hangs):
+    def test(self, request_logs, crashes, hangs):
         for episode in range(5):
             state = self.env.reset()
             done = False
@@ -215,7 +251,7 @@ class QLearningAgent:
                 action.append(np.argmax(self.bool_q_table[state, :]))
                 action.append(np.argmax(self.byte_q_table[state, :]))
                 action.append(np.argmax(self.string_q_table[state, :]))
-                new_state, reward, done = self.env.step(action,request_logs,crashes,hangs)
+                new_state, reward, done = self.env.step(action, request_logs, crashes, hangs)
 
                 if done:
                     self.env.render()
@@ -230,50 +266,57 @@ class QLearningAgent:
 
                 state = new_state
 
-def write_agent_report(agent,name):
-        q_tables_serializable = {
-            "int_q_table": agent.int_q_table.tolist() if isinstance(agent.int_q_table,
-                                                                    np.ndarray) else agent.int_q_table,
-            "float_q_table": agent.float_q_table.tolist() if isinstance(agent.float_q_table,
-                                                                        np.ndarray) else agent.float_q_table,
-            "bool_q_table": agent.bool_q_table.tolist() if isinstance(agent.bool_q_table,
-                                                                      np.ndarray) else agent.bool_q_table,
-            "byte_q_table": agent.byte_q_table.tolist() if isinstance(agent.byte_q_table,
-                                                                      np.ndarray) else agent.byte_q_table,
-            "string_q_table": agent.string_q_table.tolist() if isinstance(agent.string_q_table,
-                                                                          np.ndarray) else agent.string_q_table,
-        }
 
-        mutation_counts_serializable = {
-            str(key): {func.__name__: value for func, value in inner_dict.items()}
-            for key, inner_dict in agent.mutation_counts.items()
-        }
+def write_agent_report(agent, name):
+    q_tables_serializable = {
+        "int_q_table": agent.int_q_table.tolist() if isinstance(agent.int_q_table,
+                                                                np.ndarray) else agent.int_q_table,
+        "float_q_table": agent.float_q_table.tolist() if isinstance(agent.float_q_table,
+                                                                    np.ndarray) else agent.float_q_table,
+        "bool_q_table": agent.bool_q_table.tolist() if isinstance(agent.bool_q_table,
+                                                                  np.ndarray) else agent.bool_q_table,
+        "byte_q_table": agent.byte_q_table.tolist() if isinstance(agent.byte_q_table,
+                                                                  np.ndarray) else agent.byte_q_table,
+        "string_q_table": agent.string_q_table.tolist() if isinstance(agent.string_q_table,
+                                                                      np.ndarray) else agent.string_q_table,
+    }
 
-        mutation_rewards_serializable = {
-            str(key): {func.__name__: value for func, value in inner_dict.items()}
-            for key, inner_dict in agent.mutation_rewards.items()
-        }
+    mutation_counts_serializable = {
+        str(key): {func.__name__: value for func, value in inner_dict.items()}
+        for key, inner_dict in agent.mutation_counts.items()
+    }
 
+    mutation_rewards_serializable = {
+        str(key): {func.__name__: value for func, value in inner_dict.items()}
+        for key, inner_dict in agent.mutation_rewards.items()
+    }
 
-        q_value_convergence_serializable = {
-            "int": [q.tolist() for q in agent.q_value_convergence['int']],
-            "float": [q.tolist() for q in agent.q_value_convergence['float']],
-            "bool": [q.tolist() for q in agent.q_value_convergence['bool']],
-            "byte": [q.tolist() for q in agent.q_value_convergence['byte']],
-            "string": [q.tolist() for q in agent.q_value_convergence['string']],
-        }
+    q_value_convergence_serializable = {
+        "int": [q.tolist() for q in agent.q_value_convergence['int']],
+        "float": [q.tolist() for q in agent.q_value_convergence['float']],
+        "bool": [q.tolist() for q in agent.q_value_convergence['bool']],
+        "byte": [q.tolist() for q in agent.q_value_convergence['byte']],
+        "string": [q.tolist() for q in agent.q_value_convergence['string']],
+    }
 
+    exploration_rates = [agent.min_exploration_rate +
+                         (agent.max_exploration_rate - agent.min_exploration_rate) * np.exp(
+        -agent.exploration_decay_rate * episode)
+                         for episode in range(agent.num_episodes)]
+    exploitation_rates = [1 - rate for rate in exploration_rates]
 
-        report = {
-            "name": name,
-            "q_tables": q_tables_serializable,
-            "episode_rewards": agent.episode_rewards,
-            "state_visits": agent.state_visits.tolist(),
-            "mutation_counts": mutation_counts_serializable,
-            "mutation_rewards": mutation_rewards_serializable,
-            "q_value_convergence": q_value_convergence_serializable
-        }
+    report = {
+        "name": name,
+        "q_tables": q_tables_serializable,
+        "episode_rewards": agent.episode_rewards,
+        "state_visits": agent.state_visits.tolist(),
+        "mutation_counts": mutation_counts_serializable,
+        "mutation_rewards": mutation_rewards_serializable,
+        "q_value_convergence": q_value_convergence_serializable,
+        "episode_durations": agent.episode_durations,
+        "exploration_rates": exploration_rates,
+        "exploitation_rates": exploitation_rates,
+        "rewards_all_episodes": agent.rewards_all_episodes
+    }
 
-        return report
-
-
+    return report

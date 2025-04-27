@@ -8,7 +8,6 @@ from gym.spaces import MultiDiscrete, Discrete
 
 import FuzzCore.Taxonomy
 from utils import fill_values
-import urllib.parse
 
 
 class APIFuzzyTestingEnvironment(gym.Env):
@@ -52,6 +51,7 @@ class APIFuzzyTestingEnvironment(gym.Env):
                     self.function = fill_values(self.function, True, mutation_methods, False, self.ids)
 
             resp = self._execute_action(self.function, crashes, hangs)
+            print(resp)
 
         self.response = resp
         requests_log.append({"status_code": self.response.status_code, "message": self.response.content})
@@ -118,17 +118,17 @@ class APIFuzzyTestingEnvironment(gym.Env):
                     files = {'plant': sample.pop('plant')}
                     if len(parameters) > 0:
                         response = requests.patch(self.base_url + path, json=sample, files=files,
-                                                 params=parameters,headers=headers, timeout=40)
+                                                  params=parameters, headers=headers, timeout=40)
                     else:
-                        response = requests.patch(self.base_url + path,json=sample, files=files,headers=headers,
-                                                 timeout=40)
+                        response = requests.patch(self.base_url + path, json=sample, files=files, headers=headers,
+                                                  timeout=40)
                 else:
                     if len(parameters) > 0:
                         response = requests.patch(self.base_url + path, json=sample, headers=headers,
-                                                params=parameters, timeout=40)
+                                                  params=parameters, timeout=40)
                     else:
                         response = requests.patch(self.base_url + path, json=sample, headers=headers,
-                                                timeout=40)
+                                                  timeout=40)
             elif function.method == 'POST':
                 sample = function.request_body.to_dict_request() if function.request_body else None
                 if function.content_type == "multipart/form-data":
@@ -149,13 +149,16 @@ class APIFuzzyTestingEnvironment(gym.Env):
             response.raise_for_status()
             return response
         except requests.exceptions.Timeout as e:
+            print("Exception Timeout occurred:", e)
             log_and_track_hangs(e, function, hangs)
             return "error"
         except requests.exceptions.HTTPError as e:
+            print("Exception HTTPError occurred:", e)
             if response.status_code >= 500:
                 log_and_track_crash(e, function, crashes)
             return response
         except Exception as e:
+            print("Exception occurred:", e)
             return "error"
 
     def _calculate_reward(self):
@@ -231,9 +234,9 @@ def log_and_track_crash(exception, function, crash_dict):
 
         crash_dict[crash_id] = {
             'count': 1,
-            'error_message':exception.response.text,
+            'error_message': exception.response.text,
             'stack_trace': ''.join(traceback.format_tb(exception.__traceback__)[5:15]),
-            'sample_input':f"url:{exception.request.url},\n body: {exception.request.body}",
+            'sample_input': f"url:{exception.request.url},\n body: {exception.request.body}",
         }
     return crash_dict
 
@@ -258,6 +261,7 @@ def log_and_track_hangs(exception, function, hang_dict):
             'parameters': function.parameters,
         }
     return hang_dict
+
 
 def safe_replace_path(path, item_name, sample):
     encoded_sample = str(sample).replace('/', '%2F')

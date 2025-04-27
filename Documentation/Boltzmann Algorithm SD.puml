@@ -1,0 +1,129 @@
+@startuml
+actor User
+participant "QLearningAgent" as Agent
+participant "Boltzmann Module (Temperature Control)" as Boltzmann
+participant "APIFuzzyTestingEnvironment" as Environment
+participant "Mutation Methods" as Mutations
+participant "Reports/Charts" as Reports
+
+== Training Phase ==
+activate User
+
+User -> Agent : initialize(env, mutation_methods, params)
+activate Agent
+Agent -> Environment : reset()
+activate Environment
+Environment --> Agent : initial_state
+deactivate Environment
+
+loop For each episode (train)
+    Agent -> Agent : choose_action(state)\n(using Boltzmann softmax policy)
+    note right of Agent
+      Boltzmann softmax selects actions
+      based on Q-values scaled by temperature.
+      Higher temperature → more exploration.
+      Lower temperature → more exploitation.
+    end note
+    Agent -> Boltzmann : compute action probabilities\n(softmax(q-values / T))
+    activate Boltzmann
+    Boltzmann --> Agent : action probabilities
+    deactivate Boltzmann
+
+    Agent -> Mutations : select mutation methods
+    activate Mutations
+    Mutations --> Agent : mutation methods
+    deactivate Mutations
+
+    Agent -> Environment : step(action, request_logs, crashes, hangs)
+    activate Environment
+    Environment --> Agent : new_state, reward, done
+    deactivate Environment
+
+    Agent -> Agent : update_q_table(state, action, reward, new_state)
+    Agent -> Agent : log mutation usage and rewards
+
+    Agent -> Boltzmann : update temperature (decay per episode)
+    activate Boltzmann
+    Boltzmann --> Agent : new decayed temperature
+    deactivate Boltzmann
+
+    alt if done
+        Agent -> Environment : break episode
+                activate Environment
+                Environment -> Agent : response
+                deactivate Environment
+    end
+end
+
+Agent -> Agent : record rewards, durations, Q-value snapshots
+deactivate Agent
+
+== Testing Phase ==
+
+User -> Agent : test(request_logs, crashes, hangs)
+activate Agent
+Agent -> Environment : reset()
+activate Environment
+Environment --> Agent : initial_state
+deactivate Environment
+
+loop For each test episode
+    Agent -> Agent : choose best action\n(argmax on Q-tables)
+    note right of Agent
+      During testing, agent selects
+      actions greedily with no exploration.
+    end note
+    Agent -> Environment : step(action, request_logs, crashes, hangs)
+    activate Environment
+    Environment --> Agent : new_state, reward, done
+    deactivate Environment
+
+    Agent -> User : print environment render/feedback
+end
+deactivate Agent
+
+== Reporting Phase ==
+
+User -> Agent : write_agent_report(name)
+activate Agent
+Agent -> Reports : generate serialized report
+activate Reports
+Reports --> Agent : serialized data
+deactivate Reports
+Agent --> User : report ready
+deactivate Agent
+
+== Visualization Phase ==
+
+User -> Agent : plot_cumulative_rewards()
+activate Agent
+Agent --> User : cumulative rewards plot
+deactivate Agent
+
+User -> Agent : plot_learning_curve()
+activate Agent
+Agent --> User : learning curve plot
+deactivate Agent
+
+User -> Agent : plot_q_value_convergence()
+activate Agent
+Agent --> User : Q-value convergence plot
+deactivate Agent
+
+User -> Agent : plot_action_distribution()
+activate Agent
+Agent --> User : action distribution plots
+deactivate Agent
+
+User -> Agent : plot_exploration_exploitation_ratio()
+activate Agent
+Agent --> User : exploration vs exploitation plot
+deactivate Agent
+
+User -> Agent : plot_state_visits()
+activate Agent
+Agent --> User : state visit distribution
+deactivate Agent
+deactivate User
+
+@enduml
